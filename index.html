@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>主日學大富翁</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+/* Layout: 1600x900 舞台等比縮放；左側 6x6 環形棋盤(20格)，右側排名＋骰子，上方為輪到哪一隊 */
+:root{
+  --sky:#e8f6ff; --ink:#1d2b53; --paper:#ffffff; --sun:#ffd93d; --pink:#ff6b9d; --mint:#2ec4b6; --violet:#7b5cff;
+  --c-start:#ffd93d; --c-fun:#ff8fab; --c-bible:#5ec8f2; --c-share:#a8e063; --c-challenge:#ffa23a; --c-chance:#c59bff; --c-rest:#c3cad6;
+  --display:'Fredoka','Noto Sans TC',sans-serif; --body:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:radial-gradient(circle at 20% 10%,#fff6c9 0,#d8f1ff 45%,#cdd8ff 100%);color:var(--ink);font-family:var(--body);font-weight:700;user-select:none}
+*{box-sizing:border-box}
+button{font-family:inherit;cursor:pointer;border:0;color:inherit}
+button:focus-visible{outline:5px solid var(--violet);outline-offset:3px}
+#stage{position:absolute;left:50%;top:50%;width:1600px;height:900px;transform-origin:center;}
+.screen{position:absolute;inset:0}
+
+/* ---------- 設定畫面 ---------- */
+#setup{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px}
+#setup h1{font-size:112px;margin:0;line-height:1;letter-spacing:4px;color:var(--ink);text-shadow:6px 6px 0 var(--sun)}
+#setup .sub{font-size:34px;margin:0;color:#44527f}
+.countrow{display:flex;gap:18px;align-items:center;font-size:34px}
+.countbtn{width:96px;height:80px;border-radius:24px;background:#fff;font:700 44px var(--display);box-shadow:0 7px 0 #b9c3e6;transition:.15s}
+.countbtn.on{background:var(--violet);color:#fff;box-shadow:0 7px 0 #4a34c4;transform:translateY(-2px)}
+#teaminputs{display:grid;grid-template-columns:repeat(2,560px);gap:20px 30px}
+.tin{display:flex;align-items:center;gap:16px;background:#fff;border-radius:26px;padding:12px 22px 12px 14px;box-shadow:0 7px 0 rgba(29,43,83,.18)}
+.tin .badge{width:74px;height:74px;border-radius:50%;display:grid;place-items:center;font-size:42px;flex:none}
+.tin input{flex:1;min-width:0;border:0;font:900 38px var(--body);color:var(--ink);background:transparent;outline:none}
+.tin input:focus{border-bottom:4px solid var(--violet)}
+.bigbtn{padding:20px 70px;border-radius:999px;font:900 52px var(--body);background:var(--pink);color:#fff;box-shadow:0 10px 0 #c23a6d;transition:.12s}
+.bigbtn:hover{transform:translateY(-3px)}
+.bigbtn:active{transform:translateY(5px);box-shadow:0 4px 0 #c23a6d}
+#setup .goal{font-size:28px;color:#44527f}
+
+/* ---------- 遊戲畫面 ---------- */
+#game{display:none}
+#topbar{position:absolute;left:910px;top:22px;width:650px;height:56px;display:flex;align-items:center;justify-content:flex-end;gap:16px}
+.iconbtn{height:52px;padding:0 22px;border-radius:20px;background:#fff;font-size:24px;box-shadow:0 5px 0 #b9c3e6}
+#board{position:absolute;left:40px;top:28px;width:780px;height:780px;transform-origin:0 0;transform:scale(1.0769)}
+.cell{position:absolute;width:130px;height:130px;padding:3px}
+.cell .in{width:100%;height:100%;border-radius:20px;border:4px solid #fff;box-shadow:0 5px 0 rgba(29,43,83,.22);display:flex;flex-direction:column;align-items:center;padding-top:4px;position:relative;overflow:hidden}
+.cell .em{font-size:38px;line-height:1.1}
+.cell .nm{font-size:22px;line-height:1.1}
+.cell .no{position:absolute;left:8px;top:4px;font:700 16px var(--display);opacity:.55}
+.cell.glow .in{animation:glow .7s ease-in-out infinite alternate}
+@keyframes glow{to{box-shadow:0 0 0 8px rgba(123,92,255,.8),0 5px 0 rgba(29,43,83,.22)}}
+.t-start .in{background:var(--c-start)}.t-fun .in{background:var(--c-fun)}.t-bible .in{background:var(--c-bible)}
+.t-share .in{background:var(--c-share)}.t-challenge .in{background:var(--c-challenge)}.t-chance .in{background:var(--c-chance)}.t-rest .in{background:var(--c-rest)}
+#center{position:absolute;left:130px;top:130px;width:520px;height:520px;border-radius:36px;background:rgba(255,255,255,.75);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center}
+#center h2{margin:0;font-size:60px;line-height:1.05;letter-spacing:2px}
+#msg{min-height:130px;width:100%;background:#fff;border-radius:26px;padding:16px 20px;font-size:30px;line-height:1.35;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 4px var(--sun)}
+.legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.legend span{font-size:19px;padding:5px 12px;border-radius:999px;color:var(--ink)}
+.token{position:absolute;width:34px;height:34px;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 6px rgba(0,0,0,.35);display:grid;place-items:center;font-size:19px;z-index:5;transition:left .32s cubic-bezier(.4,1.4,.6,1),top .32s cubic-bezier(.4,1.4,.6,1)}
+.token .f{display:block;line-height:1}
+.token.hop .f{animation:hop .32s}
+@keyframes hop{50%{transform:translateY(-22px) scale(1.4)}}
+.token.cur{z-index:6;box-shadow:0 0 0 5px rgba(255,255,255,.9),0 0 0 9px var(--ink)}
+
+/* 右側 */
+#rank{position:absolute;left:910px;top:92px;width:650px;height:336px;background:rgba(255,255,255,.85);border-radius:34px;padding:14px 20px}
+#rank h3{margin:0 0 6px;font-size:28px;display:flex;justify-content:space-between;color:#44527f}
+#rankbody{position:relative;height:262px}
+.rrow{position:absolute;left:0;width:100%;height:64px;display:flex;align-items:center;gap:12px;transition:transform .7s cubic-bezier(.3,1.3,.5,1)}
+.rrow .rk{width:52px;font:700 40px var(--display);text-align:center}
+.rrow .ico{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:30px;flex:none}
+.rrow .rn{width:190px;font-size:29px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rrow .bar{flex:1;height:30px;border-radius:999px;background:#e3e8f7;overflow:hidden}
+.rrow .fill{height:100%;border-radius:999px;transition:width .8s cubic-bezier(.3,1.2,.5,1)}
+.rrow .sc{width:92px;text-align:right;font:700 46px var(--display)}
+.rrow.now .rn::before{content:'▶ ';color:var(--pink)}
+.pop{position:absolute;right:100px;top:6px;font:700 44px var(--display);animation:pop 1.4s forwards;pointer-events:none;z-index:9}
+@keyframes pop{0%{transform:translateY(10px) scale(.6);opacity:0}20%{transform:scale(1.3);opacity:1}100%{transform:translateY(-50px);opacity:0}}
+#dicepanel{position:absolute;left:910px;top:442px;width:650px;height:438px;background:rgba(255,255,255,.85);border-radius:34px;padding:16px 24px}
+#dicehint{margin:0 0 14px;padding:8px 10px;border-radius:999px;font-size:40px;line-height:1.25;text-align:center;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.18);box-shadow:0 6px 0 rgba(0,0,0,.2);transition:background .3s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dice{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.die{height:150px;border-radius:30px;background:#fff;box-shadow:0 9px 0 #b9c3e6;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:.12s;border:4px solid var(--c)}
+.die b{font:700 80px/1 var(--display);color:var(--c)}
+.die small{font-size:24px;color:#44527f}
+.die:hover:not(:disabled){transform:translateY(-4px)}
+.die:active:not(:disabled){transform:translateY(6px);box-shadow:0 3px 0 #b9c3e6}
+.die:disabled{opacity:.4;cursor:not-allowed}
+
+/* ---------- Modal ---------- */
+#modal{position:absolute;inset:0;background:rgba(29,43,83,.7);display:none;align-items:center;justify-content:center;z-index:50;animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.card{width:1380px;max-height:840px;background:#fff;border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 0 rgba(0,0,0,.25);animation:zoom .35s cubic-bezier(.3,1.5,.5,1)}
+@keyframes zoom{from{transform:scale(.7)}}
+.card .hd{padding:20px 44px;display:flex;align-items:center;gap:20px;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.18)}
+.card .hd .tag{font-size:30px;background:rgba(255,255,255,.3);padding:6px 22px;border-radius:999px}
+.card .hd h2{margin:0;font-size:56px;flex:1}
+.card .hd .who{font-size:30px}
+.card .bd{padding:16px 44px;display:flex;gap:36px;min-height:0;overflow:auto;flex:1}
+.card .main{flex:1;font-size:34px;line-height:1.5;min-width:0}
+.card .main .q{font-size:34px}
+.opt{display:block;width:100%;text-align:left;margin:8px 0;padding:6px 18px;border-radius:18px;background:#eef2ff;font:700 30px/1.35 var(--body);color:var(--ink);box-shadow:0 5px 0 #c9d2f0;transition:.15s}
+button.opt:hover:not(:disabled){background:#dfe6ff;transform:translateY(-2px)}
+.opt:disabled{cursor:default}
+.opt.ok{background:#27ae60;color:#fff;box-shadow:0 5px 0 #1b7c43;opacity:1}
+.opt.bad{background:#e5383b;color:#fff;box-shadow:0 5px 0 #a3191b;opacity:1}
+.opt.dim{opacity:.5}
+.fb{margin-top:6px;font-size:34px}
+.refline{margin-top:4px;padding:8px 16px;border-radius:16px;background:#fff3b0;font-size:28px;line-height:1.35}
+.refline small{display:block;font-size:22px;color:#44527f}
+.fb.ok{color:#1b7c43}.fb.bad{color:#c9282b}
+.hintline{margin-top:12px;font-size:28px;color:#44527f}
+.ans{margin-top:14px;padding:14px 20px;border-radius:20px;background:#fff3b0;font-size:30px;line-height:1.45}
+.ans small{display:block;color:#44527f;font-size:24px}
+.eff{margin-top:14px;font-size:38px;color:var(--violet)}
+.verse{font-size:32px;line-height:1.55;background:#f5f1ff;border-radius:24px;padding:16px 22px}
+.timerbox{width:360px;flex:none;display:flex;flex-direction:column;align-items:center;gap:14px}
+.clock{font:700 130px/1 var(--display);color:var(--ink);font-variant-numeric:tabular-nums}
+.clock.warn{color:#e5383b;animation:pulse .5s infinite alternate}
+@keyframes pulse{to{transform:scale(1.1)}}
+.tbtn{width:100%;padding:14px 0;border-radius:24px;font-size:38px;color:#fff;background:var(--mint);box-shadow:0 7px 0 #1b8c82}
+.tbtn.ghost{background:#e3e8f7;color:var(--ink);box-shadow:0 5px 0 #b9c3e6;font-size:28px;padding:10px 0}
+.timesup{font-size:44px;color:#e5383b;min-height:56px}
+.card .ft{padding:12px 44px 24px;display:flex;gap:26px;justify-content:center}
+.ft button{flex:1;max-width:520px;padding:18px 10px;border-radius:30px;font-size:44px;color:#fff;box-shadow:0 8px 0 rgba(0,0,0,.25);transition:.12s}
+.ft button:active:not(:disabled){transform:translateY(5px);box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.ft .ok{background:#27ae60}.ft .no{background:#e5383b}.ft .neu{background:var(--violet)}
+.ft button:disabled{opacity:.45;cursor:not-allowed}
+
+/* ---------- 勝利 ---------- */
+#win{position:absolute;inset:0;background:rgba(29,43,83,.82);display:none;z-index:80;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;color:#fff}
+#win canvas{position:absolute;inset:0;pointer-events:none}
+#win .trophy{font-size:150px;animation:bounce 1s infinite alternate}
+@keyframes bounce{to{transform:translateY(-24px) rotate(6deg)}}
+#win h1{margin:0;font-size:110px;text-shadow:6px 6px 0 var(--pink)}
+#win p{margin:0;font-size:44px}
+#winrank{display:flex;gap:22px;margin:10px 0 18px}
+.wr{background:#fff;color:var(--ink);border-radius:26px;padding:14px 26px;font-size:30px;min-width:220px}
+.wr b{display:block;font:700 54px var(--display)}
+#win .row{display:flex;gap:24px;position:relative;z-index:2}
+#win .bigbtn.alt{background:var(--mint);box-shadow:0 10px 0 #1b8c82}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important}}
+</style>
+
+<div id="stage">
+  <!-- 設定 -->
+  <section id="setup" class="screen">
+    <h1>🎲 主日學大富翁</h1>
+    <p class="sub">哥林多後書 · 以賽亞書　一起來挑戰！</p>
+    <div class="countrow"><span>幾組一起玩？</span>
+      <button class="countbtn" data-n="2">2</button><button class="countbtn on" data-n="3">3</button><button class="countbtn" data-n="4">4</button>
+    </div>
+    <div id="teaminputs"></div>
+    <button class="bigbtn" id="startbtn">開始遊戲！</button>
+    <div class="goal">🏆 最先拿到 100 分的隊伍獲勝</div>
+  </section>
+
+  <!-- 遊戲 -->
+  <section id="game" class="screen">
+    <div id="topbar">
+      <button class="iconbtn" id="mutebtn" aria-label="音效開關">🔊 音效</button>
+      <button class="iconbtn" id="resetbtn">↺ 重新開始</button>
+    </div>
+    <div id="board"><div id="center"></div></div>
+    <div id="rank"><h3><span>🏅 即時排名</span><span>目標 100 分</span></h3><div id="rankbody"></div></div>
+    <div id="dicepanel"><div id="dicehint">請選擇前進步數</div><div id="dice"></div></div>
+  </section>
+
+  <div id="modal"></div>
+  <div id="win"><canvas id="cv" width="1600" height="900"></canvas></div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+/* ================= 資料 ================= */
+const TYPES={
+  start:{em:'🏁',nm:'起點',cls:'t-start',col:'#ffd93d'},
+  fun:{em:'🎉',nm:'團康趣味',cls:'t-fun',col:'#ff8fab'},
+  chance:{em:'🎴',nm:'機會命運',cls:'t-chance',col:'#9b5de5'},
+  bible:{em:'📖',nm:'聖經搶答',cls:'t-bible',col:'#2aa9e0'},
+  challenge:{em:'🔥',nm:'遊戲挑戰',cls:'t-challenge',col:'#f08a00'},
+  share:{em:'💬',nm:'分享Time',cls:'t-share',col:'#6fb82a'},
+  
+  
+  rest:{em:'😴',nm:'休息禁閉',cls:'t-rest',col:'#7d8799'}
+};
+const LAYOUT=['start','fun','bible','chance','share','challenge','bible','fun','rest','bible','chance','share','challenge','fun','bible','chance','share','challenge','fun','bible'];
+const N=LAYOUT.length;
+const TEAM_STYLE=[{icon:'🐑',color:'#ff5a5f',def:'小羊隊'},{icon:'🕊️',color:'#3b82f6',def:'鴿子隊'},{icon:'🔥',color:'#16a34a',def:'火焰隊'},{icon:'⭐',color:'#e08a00',def:'星星隊'}];
+const WIN=100;
+/* 團康趣味*/
+const FUN=[
+ {name:'全體肢體熱身',text:'隊伍活絡筋骨！全隊一起站起來做 10 個開合跳，完成即可加分！',ok:'完成',okp:15,no:'失敗'},
+ {name:'平安大作戰！',text:'全隊一起面向大家，舉起雙手、用熱情的聲音大喊：「平安！今天看到你們真好！」',ok:'完成',okp:10,no:'失敗'},
+ {name:'猜拳對決',text:'派出一位隊員與前一隊代表進行「三戰兩勝剪刀石頭布」！',ok:'獲勝',okp:5,no:'失敗'},
+ {name:'默契大考驗',text:'默契大考驗！派出兩個代表進行終極二選一。倒數 3、2、1 後，兩人同時比出左手（A）或右手（B），選一樣就成功！',ok:'成功',okp:10,no:'失敗',pairs:true},
+ {name:'稱讚大放送',text:'愛心加油站！選出隊上的一位隊員，其他 3 位隊員要在 10 秒內輪流說出他／她身上的一個優點或值得學習的地方。',ok:'完成',okp:15,no:'失敗'}
+];
+const PAIRS=['早餐吃：A 甜的　B 鹹的','夏天　A 吃冰　B 喝飲料','手搖喝...　A 全糖　B 無糖','週末　A 在家看動漫/追劇／追星　B 跟朋友出去玩！','看電影配　A 爆米花　B 薯條','放假去　A 山上　B 海邊','零食　A 甜的　B 鹹的','常聽的歌　A 中文　B 英文/韓文'];
+
+/* 機會命運格*/
+const CHANCE=[
+ {id:1,name:'愛宴恩典',text:'今天教會有愛宴！感謝上帝賜下豐盛的恩典。',eff:'全隊直接獲得 +20 分',kind:'score',val:20,ico:'🍱'},
+ {id:2,name:'塞車警告',text:'早上出門太慢塞車了，差點趕不及主日學！',eff:'暫停一回合（下次輪到時不能選擇步數）',kind:'skip',ico:'🚗'},
+ {id:3,name:'前一天太晚睡',text:'前一天晚上太晚睡，主日醒不來，直接大遲到！！',eff:'扣除 15 分',kind:'score',val:-15,ico:'🥱'},
+ {id:4,name:'聖靈的風',text:'一陣強烈的聖靈之風吹過，將你們吹向遠方！',eff:'再獲得一次「免費選擇步數」的機會',kind:'extra',ico:'🌬️'},
+ {id:5,name:'小羊迷路',text:'走迷路了，需要重新調整方向。',eff:'棋子強制後退 3 格',kind:'back',val:3,ico:'🐑'},
+ {id:6,name:'金句達人',text:'限時 2 分鐘背誦經文（不可偷看喔！）',eff:'背出經文 +25 分 ／ 背不出 +0 分',kind:'verse',ico:'🎓',time:120,
+  verse:'我們與神同工的，也勸你們不可徒受祂的恩典。因為祂說：「在悅納的時候，我應允了你；在拯救的日子，我搭救了你。」看哪，現在正是悅納的時候！看哪，現在正是拯救的日子！',ref:'哥林多後書 6:1–2',pts:25}
+];
+
+/* 聖經搶答*/
+const BIBLE=[
+  // 以賽亞書
+ {t:'「以馬內利」的兆頭',q:'以賽亞書第7章，當亞哈斯王面臨外敵入侵、心中膽怯時，上帝透過以賽亞給了他一個著名的「兆頭」，預言必有童女懷孕生子，請問這個孩子的名字是什麼？意思為何？',o:['瑪哈珥·沙拉勒·哈施·罷斯（速落快罷）','施亞雅述（餘民將要歸回）','以馬內利（神與我們同在）'],a:'(C) 以馬內利',r:'以賽亞書 7:14'},
+ {t:'奇妙的君王稱號',q:'以賽亞書 9:6 預言將有一嬰孩為我們而生，有一子賜給我們，政權必擔在他的肩頭上。請問以下哪一個不是經文中用來稱呼這位君王的稱號？',o:['奇妙策士、全能的神','萬王之王、萬主之主','永在的父、和平的君'],a:'(B) 萬王之王、萬主之主',n:'此稱號出自啟示錄；以賽亞書 9:6 為奇妙策士、全能的神、永在的父、和平的君',r:'以賽亞書 9:6'},
+ {t:'撒拉弗的讚美',q:'以賽亞在第 6 章看見主坐在高高的寶座上，寶座旁邊的「撒拉弗」（天使）彼此呼喊讚美。請問他們連續呼喊了三次什麼詞彙？',o:['公義！公義！公義！','聖哉！聖哉！聖哉！','榮耀！榮耀！榮耀！'],a:'(B) 聖哉！聖哉！聖哉！',n:'萬軍之耶和華，祂的榮耀充滿全地！',r:'以賽亞書 6:3'},
+ {t:'潔淨以賽亞嘴唇的物品',q:'當以賽亞看到神的聖潔時，驚呼「我是嘴唇不潔的人，又住在嘴唇不潔的民中」，此時撒拉弗用什麼東西接觸他的嘴唇，宣告他的罪孽被除掉、罪惡被赦免了？',a:'從祭壇上用肉鉗拿取的「紅炭」（火炭）',r:'以賽亞書 6:6–7'},
+ {t:'歡然取水',q:'以賽亞書 12:3 是一首充滿喜樂的拯救之歌，經文中說：「所以，你們必歡然從＿＿＿＿取水。」',o:['拯救的井','恩典的泉源','西羅亞的池子'],a:'(A) 拯救的井',r:'這也是住棚節期著名的預表，指向上帝是我們生命喜樂與救恩的源頭。'},
+ {t:'耶西的本必發一條',q:'以賽亞書 11 章提到「從耶西的本必發一條，從他根生的枝子必結果實」，請問「耶西」是舊約聖經中哪一位偉大君王的父親？',o:['大衛王','所羅門王','掃羅王'],a:'(A) 大衛王',r:'以賽亞書 11:1；撒母耳記上 16:1'},
+ {t:'希西家王的祈禱與延壽',q:'猶大王希西家病得要死時，轉臉朝牆懇切禱告，上帝垂聽了他的禱告，應許加增他多少年的壽命？並給了他「日影退後十度」的兆頭？',o:['5 年','10 年','15 年'],a:'(C) 15 年',r:'以賽亞書 38:5, 8'},
+ {t:'和平的遠景',q:'以賽亞書 2:4 預言末後的日子萬民流歸主的山，神必在列國中施行審判，那時人們不再學習戰事，要將「刀打成＿＿＿，槍打成＿＿＿ 」？',o:['刀打成金條，槍打成木棍','刀打成犁頭，槍打成鐮刀','刀打成盾牌，槍打成長矛'],a:'(B) 刀打成犁頭，槍打成鐮刀',r:'象徵將原本用於毀滅與戰爭的武器，轉化為生產與養育生命的農具，指向基督帶來的和平國度。'},
+ {t:'葡萄園之歌',q:'以賽亞書第 5 章著名的「葡萄園之歌」中，上帝將猶大比喻為祂親自刨土、撿去石頭、栽種上等葡萄樹的葡萄園，期望它結出好葡萄，最後卻結出了什麼？',o:['無花果','酸葡萄（野葡萄）','枯萎的枝子'],a:'(B) 酸葡萄（野葡萄）',r:'以賽亞書 5:1–7。上帝指責猶大百姓指望公平卻有暴虐，指望公義卻有冤聲。'},
+ {t:'堅心倚賴',q:'以賽亞書 26:3 是一句帶來極大安慰的經典金句：「堅心倚賴你的，你必保守他＿＿＿＿，因為他倚靠你。」請問空格是？',o:['十分平安','財寶豐富','凡事順利'],a:'(A) 十分平安',r:'希伯來原文以重複的「平安、平安（Shalom Shalom）」來強調上帝賜給專一仰望祂的人無比穩固的平安。'},
+ //  哥林多後書
+ {t:'賜安慰的神與目的',q:'保羅在哥林多後書 1 章稱神為「發慈悲的父，賜各樣安慰的神」。請問神在患難中安慰我們的主要目的之一是什麼？',o:['讓我們永遠不會再遇到困難','叫我們能用神所賜的安慰，去安慰那遭各樣患難的人','證明我們比別人更有屬靈權柄'],a:'(B) 叫我們能用神所賜的安慰去安慰那遭各樣患難的人',r:'哥林多後書 1:3–4'},
+ {t:'基督的香氣',q:'請接下一句：「感謝神！常率領我們在基督裡誇勝，並藉著我們在各處顯揚那因認識基督而有的＿＿＿＿。」',a:'香氣（或「基督的香氣」）',r:'哥林多後書 2:14–15'},
+ {t:'字句與精意（聖靈）',q:'哥林多後書 3:6 提到新約的執事：「不是憑著字句，乃是憑著精意（聖靈）」。請問保羅說「字句」與「精意（聖靈）」分別會帶來什麼結果？',o:['字句叫人活，精意叫人死','字句叫人死，精意叫人活','兩者都叫人活'],a:'(B) 字句叫人死，精意（聖靈）叫人活',r:'哥林多後書 3:6'},
+ {t:'主的靈在哪裡',q:'「主的靈在哪裡，哪裡就得以＿＿＿＿。」-- 哥林多後書 3:17',o:['剛強','聖潔','自由'],a:'(C) 自由',r:'聖靈使我們脫離律法字句的束縛與罪的控告，享受在基督裡的真自由。'},
+ {t:'瓦器裡的寶貝',q:'哥林多後書 4:7 說：「我們有這寶貝放在瓦器裡」。請問這裡的「瓦器」指的是什麼？而「寶貝」又指的是什麼？',a:'「瓦器」指我們脆弱、平凡的人體／生命；「寶貝」指基督的榮耀福音／基督自己。',n:'要顯明這莫大的能力是出於神，不是出於我們',r:'哥林多後書 4:7'},
+ {t:'外體毀壞卻不喪膽',q:'保羅在哥林多後書 4:16 勉勵我們不要喪膽：「所以，我們不喪膽。外體雖然毀壞，內心卻＿＿＿＿。」',o:['永不疲倦','剛強壯膽','一天新似一天'],a:'(C) 一天新似一天',r:'雖然肉體會衰老或疲累，但我們裡面的屬靈生命靠著聖靈天天更新。'},
+ {t:'患難與榮耀的對比',q:'保羅如何描述我們在世上所受的苦難與未來的榮耀？',o:['極重無比的患難 vs 至暫至輕的榮耀','至暫至輕的患難 vs 極重無比永遠的榮耀','永遠不退去的患難 vs 遙不可及的榮耀'],a:'(B) 至暫至輕的患難，要為我們成就極重無比、永遠的榮耀',r:'哥林多後書 4:17'},
+ {t:'新造的人',q:'經文填空：「若有人在基督裡，他就是＿＿＿＿，舊事已過，都變成＿＿＿＿了。」-- 哥林多後書 5:17',a:'新造的人、新的',r:'哥林多後書 5:17'},
+ {t:'基督的使者與職分',q:'哥林多後書 5:18–20 提到，上帝藉著基督使我們與祂和好，並賜給我們什麼職分？使我們能替基督作使者？',o:['審判世界的職分','勸人與神和好的職分','治理萬物的職分'],a:'(B) 勸人與神和好的職分',r:'哥林多後書 5:18–20'},
+ {t:'神的應許在基督裡',q:'保羅在哥林多後書 1:20 宣告：「神的應許，不論有多少，在基督都是＿＿＿＿，所以藉著他也都是實在（阿們）的，使神因我們得榮耀。」',o:['是的（Yes）','隱藏的','恩典'],a:'(A) 是的（Yes）',r:'舊約中所有神的應許與救恩，在耶穌基督身上都得到了確定的成就與應驗。'}
+];
+
+/*分享Time*/
+const SHARE=['如果見到耶穌，最想問的問題？',
+              '最想跟哪位聖經人物見面？為什麼？',
+              '分享這星期一件感恩的小事。',
+              '分享這週一件開心的事/生活小確幸。',
+              '最近生活中（課業、人際、家庭等）遇到最想克服的一件小困難是什麼？',
+              '分享一句你最喜歡的經文，或是最近受到鼓勵的一句話。',
+              '最近希望別人為你代禱的一件事？'];
+
+/* 遊戲挑戰格*/
+const CHALLENGE=[
+  //  {name:'空中不落地',text:'全隊圍成圈，用一個紙團（或外套）互相傳接，90 秒內累積 20 次不落地！'},
+  //  {name:'心有靈犀',text:'全隊閉上眼睛，90 秒內從 1 數到 15。每人隨機喊下一個數字，不可約定順序，兩人同時開口就重來！'},
+  //  {name:'人體雕像',text:'全隊用身體排出「十字架」或「馬槽」的造型，定格 10 秒不能動，90 秒內完成！'},
+  {name:'比手畫腳',text:'派一位隊員進行比手畫腳，限時90秒內猜對！'},
+  {name:'繞口令三連發',text:'三位隊員各完成一次繞口令「吃葡萄不吐葡萄皮，不吃葡萄倒吐葡萄皮」，中途不可 NG，90 秒內完成！'},
+  {name:'書卷名接力',text:'全隊輪流接力說出聖經書卷名，90 秒內說出至少 15 卷（不可重複）！'},
+ {name:'單腳大挑戰',text:'全隊同時單腳站立，90 秒內全員都不可換腳、不可碰到別人，看誰撐得住！'}
+];
+
+/* ================= 工具 ================= */
+const $=s=>document.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function Bag(items){let bag=[],last=null;return{draw(){if(!bag.length){bag=shuffle(items);if(items.length>1&&bag[bag.length-1]===last){const k=Math.floor(Math.random()*(bag.length-1));[bag[k],bag[bag.length-1]]=[bag[bag.length-1],bag[k]]}}const x=bag.pop();last=x;return x}}}
+let decks;
+const newDecks=()=>({chance:Bag(CHANCE),fun:Bag(FUN),bible:Bag(BIBLE),share:Bag(SHARE),challenge:Bag(CHALLENGE),pairs:Bag(PAIRS)});
+
+/* 音效 */
+let ac=null,master=null,muted=false;
+function getAC(){
+  if(!ac){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;ac=new C();
+    const comp=ac.createDynamicsCompressor();master=ac.createGain();master.gain.value=1;master.connect(comp);comp.connect(ac.destination);}
+  if(ac.state!=='running')ac.resume().catch(()=>{});
+  return ac;
+}
+/* 第一次點擊／按鍵就解鎖音效（瀏覽器規定要有操作才能出聲） */
+['pointerdown','keydown','touchstart'].forEach(ev=>addEventListener(ev,()=>{try{getAC()}catch(e){}},{passive:true}));
+function tone(f,d=.12,type='sine',v=.15,delay=0,f2=null){
+  if(muted)return;
+  try{const c=getAC();if(!c)return;const t0=c.currentTime+delay,o=c.createOscillator(),g=c.createGain();
+    o.type=type;o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t0+d);
+    g.gain.setValueAtTime(0.0001,t0);g.gain.linearRampToValueAtTime(v,t0+.01);g.gain.exponentialRampToValueAtTime(.0001,t0+d);
+    o.connect(g);g.connect(master);o.start(t0);o.stop(t0+d+.02)}catch(e){}
+}
+function click(delay=0,v=.5){ // 短促的「踏」聲（噪音）
+  if(muted)return;try{const c=getAC();if(!c)return;const n=Math.floor(c.sampleRate*.05),buf=c.createBuffer(1,n,c.sampleRate),d=buf.getChannelData(0);
+    for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3);
+    const src=c.createBufferSource(),g=c.createGain();src.buffer=buf;g.gain.value=v;src.connect(g);g.connect(master);src.start(c.currentTime+delay)}catch(e){}
+}
+const sfx={
+ step:(k=0,dir=1)=>{const f=(dir>0?400+k*55:560-k*55);tone(f,.14,'square',.12);tone(f*2,.1,'triangle',.18,.02);tone(f/2,.12,'sine',.25)},
+ land:()=>[660,880].forEach((f,i)=>tone(f,.18,'triangle',.2,i*.08)),
+ good:()=>[523,659,784,1047].forEach((f,i)=>tone(f,.18,'triangle',.18,i*.09)),
+ bad:()=>[300,220].forEach((f,i)=>tone(f,.25,'sawtooth',.1,i*.14)),
+ tick:()=>tone(900,.06,'square',.06),
+ end:()=>tone(180,.9,'sawtooth',.18),
+ pick:()=>tone(660,.1,'triangle'),
+ win:()=>[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,.25,'triangle',.2,i*.13))
+};
+
+/* ================= 狀態 ================= */
+let teams=[],cur=0,busy=false,teamCount=3,names=[];
+/* 棋盤座標：左下為起點，順時針繞一圈 */
+function cellRC(i){if(i<=5)return[5-i,0];if(i<=10)return[0,i-5];if(i<=15)return[i-10,5];return[5,5-(i-15)]}
+function tokenXY(team,idx){const[r,c]=cellRC(idx);return{x:c*130+8+team*29,y:r*130+130-40}}
+
+/* ================= 設定 ================= */
+function buildSetup(){
+  const box=$('#teaminputs');box.innerHTML='';
+  for(let i=0;i<teamCount;i++){
+    const s=TEAM_STYLE[i];
+    const d=document.createElement('div');d.className='tin';
+    d.innerHTML=`<div class="badge" style="background:${s.color}">${s.icon}</div><input id="tn${i}" maxlength="8" value="${names[i]||s.def}" aria-label="第${i+1}隊名稱">`;
+    box.appendChild(d);
+    d.querySelector('input').addEventListener('input',e=>names[i]=e.target.value);
+  }
+  document.querySelectorAll('.countbtn').forEach(b=>b.classList.toggle('on',+b.dataset.n===teamCount));
+}
+document.querySelectorAll('.countbtn').forEach(b=>b.onclick=()=>{teamCount=+b.dataset.n;sfx.pick();buildSetup()});
+$('#startbtn').onclick=()=>{
+  teams=[];
+  for(let i=0;i<teamCount;i++){const s=TEAM_STYLE[i];const nm=($('#tn'+i).value||'').trim()||s.def;teams.push({name:nm,icon:s.icon,color:s.color,score:0,shown:0,pos:0,skip:false})}
+  decks=newDecks();cur=0;busy=false;
+  $('#setup').style.display='none';$('#game').style.display='block';$('#win').style.display='none';
+  buildBoard();buildRank();startTurn();sfx.good();
+};
+$('#resetbtn').onclick=async()=>{ if(busy&&$('#modal').style.display==='flex')return; if(await confirmReset()){$('#game').style.display='none';$('#setup').style.display='flex';buildSetup()}};
+let resetArmed=0;
+function confirmReset(){ // 頁面內二次確認（不使用 confirm()）
+  const b=$('#resetbtn');
+  if(Date.now()-resetArmed<3000){resetArmed=0;b.textContent='↺ 重新開始';return Promise.resolve(true)}
+  resetArmed=Date.now();b.textContent='再按一次確認';setTimeout(()=>{if(Date.now()-resetArmed>=2900)b.textContent='↺ 重新開始'},3000);return Promise.resolve(false);
+}
+$('#mutebtn').onclick=()=>{muted=!muted;$('#mutebtn').textContent=muted?'🔇 靜音':'🔊 音效'};
+
+/* ================= 棋盤 ================= */
+function buildBoard(){
+  const b=$('#board');b.querySelectorAll('.cell,.token').forEach(e=>e.remove());
+  LAYOUT.forEach((k,i)=>{
+    const[r,c]=cellRC(i),T=TYPES[k];
+    const d=document.createElement('div');d.className='cell '+T.cls;d.id='cell'+i;d.style.left=c*130+'px';d.style.top=r*130+'px';
+    d.innerHTML=`<div class="in"><span class="no">${i}</span><div class="em">${T.em}</div><div class="nm">${T.nm}</div></div>`;
+    b.appendChild(d);
+  });
+  teams.forEach((t,i)=>{
+    const e=document.createElement('div');e.className='token';e.id='tk'+i;e.style.background=t.color;
+    e.innerHTML=`<span class="f">${t.icon}</span>`;
+    const p=tokenXY(i,0);e.style.left=p.x+'px';e.style.top=p.y+'px';b.appendChild(e);
+  });
+  $('#center').innerHTML=`<h2>🎲 主日學<br>大富翁</h2><div id="msg">點選右邊的數字，讓棋子前進！</div>
+   <div class="legend">${Object.values(TYPES).map(T=>`<span style="background:${T.col}33">${T.em} ${T.nm}</span>`).join('')}</div>`;
+}
+const say=t=>{const m=$('#msg');if(m)m.innerHTML=t};
+
+/* ================= 排名 ================= */
+function buildRank(){
+  const rb=$('#rankbody');rb.innerHTML='';
+  teams.forEach((t,i)=>{
+    const r=document.createElement('div');r.className='rrow';r.id='rr'+i;
+    r.innerHTML=`<div class="rk"></div><div class="ico" style="background:${t.color}">${t.icon}</div><div class="rn">${esc(t.name)}</div><div class="bar"><div class="fill" style="background:${t.color}"></div></div><div class="sc">0</div>`;
+    rb.appendChild(r);
+  });
+  renderRank();
+}
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function renderRank(){
+  const order=teams.map((t,i)=>i).sort((a,b)=>teams[b].score-teams[a].score||a-b);
+  const H=Math.min(66,260/teams.length);
+  order.forEach((ti,pos)=>{
+    const t=teams[ti],r=$('#rr'+ti);
+    const rank=1+teams.filter(x=>x.score>t.score).length;
+    r.style.transform=`translateY(${pos*H}px)`;r.style.height=H+'px';
+    r.querySelector('.rk').textContent=['','🥇','🥈','🥉','4'][rank]||rank;
+    r.querySelector('.fill').style.width=Math.min(100,t.score/WIN*100)+'%';
+    r.classList.toggle('now',ti===cur);
+  });
+}
+function tween(i,from,to){const el=$('#rr'+i+' .sc'),t0=performance.now();const f=now=>{const p=Math.min(1,(now-t0)/700);el.textContent=Math.round(from+(to-from)*p);if(p<1)requestAnimationFrame(f)};requestAnimationFrame(f)}
+function addScore(i,d){
+  const t=teams[i];const old=t.score;t.score=Math.max(0,t.score+d);const real=t.score-old;
+  if(d===0)return;
+  tween(i,old,t.score);renderRank();
+  const p=document.createElement('div');p.className='pop';p.textContent=(d>0?'+':'')+d;p.style.color=d>0?'#16a34a':'#e5383b';
+  $('#rr'+i).appendChild(p);setTimeout(()=>p.remove(),1500);
+  d>0?sfx.good():sfx.bad();
+}
+
+/* ================= 回合 ================= */
+function setTurnUI(){
+  const t=teams[cur];
+  $('#dicehint').style.background=t.color;
+  teams.forEach((x,i)=>$('#tk'+i).classList.toggle('cur',i===cur));
+  renderRank();
+}
+function buildDice(){
+  const cols=['#ff5a5f','#ff9f1c','#2ec4b6','#3b82f6','#7b5cff','#ff6b9d'];
+  $('#dice').innerHTML=[1,2,3,4,5,6].map(n=>`<button class="die" style="--c:${cols[n-1]}" data-n="${n}"><b>${n}</b><small>前進 ${n} 格</small></button>`).join('');
+  $('#dice').querySelectorAll('.die').forEach(b=>b.onclick=()=>pick(+b.dataset.n));
+}
+function lockDice(v){$('#dice').querySelectorAll('.die').forEach(b=>b.disabled=v);const t=teams[cur];$('#dicehint').style.background=t.color;$('#dicehint').textContent=v?`${t.icon} ${t.name} 前進中⋯`:`${t.icon} 輪到「${t.name}」選步數`}
+async function startTurn(){
+  busy=true;setTurnUI();buildDice();
+  while(teams[cur].skip){
+    lockDice(true);
+    await openModal({tag:'暫停一回合',color:'#7d8799',title:'😴 '+teams[cur].name,who:'',
+      main:`<div class="q">${esc(teams[cur].name)} 這一回合要暫停，休息一下！<br>下一輪再出發。</div>`,buttons:[{label:'好的，換下一隊',cls:'neu',v:1}]});
+    teams[cur].skip=false;cur=(cur+1)%teams.length;setTurnUI();buildDice();
+  }
+  busy=false;lockDice(false);
+  say('從右邊選擇步數，讓棋子前進！');
+}
+async function pick(n){
+  if(busy)return;busy=true;lockDice(true);sfx.pick();
+  await moveBy(cur,n,1);
+  const extra=await landOn(cur);
+  if(checkWin())return;
+  if(extra){say('🌬️ 聖靈的風！再選一次步數！');await sleep(500);return startTurn()}
+  cur=(cur+1)%teams.length;await sleep(250);startTurn();
+}
+document.addEventListener('keydown',e=>{if(/^[1-6]$/.test(e.key)&&!busy&&$('#game').style.display==='block'&&$('#modal').style.display!=='flex'&&$('#win').style.display!=='flex')pick(+e.key)});
+
+async function moveBy(i,n,dir){
+  const t=teams[i],el=$('#tk'+i);
+  for(let s=0;s<n;s++){
+    t.pos=(t.pos+dir+N)%N;const p=tokenXY(i,t.pos);
+    el.style.left=p.x+'px';el.style.top=p.y+'px';
+    el.classList.remove('hop');void el.offsetWidth;el.classList.add('hop');sfx.step(s,dir);
+    await sleep(360);
+  }
+  el.classList.remove('hop');sfx.land();
+}
+/* 回傳 true 表示再來一次 */
+async function landOn(i){
+  const t=teams[i],kind=LAYOUT[t.pos],T=TYPES[kind];
+  const cell=$('#cell'+t.pos);cell.classList.add('glow');
+  const who=`${t.icon} ${t.name}`;
+  let extra=false;
+  say(`${T.em} 停在「${T.nm}」！`);
+  await sleep(350);
+  const base={tag:T.nm,color:T.col,who};
+  if(kind==='start'){
+    await openModal({...base,title:'🏁 回到起點！',main:`<div class="q">平安回到起點，真好！</div><div class="eff">獎勵 +5 分</div>`,buttons:[{label:'領取獎勵',cls:'ok',v:1}]});
+    addScore(i,5);
+  }else if(kind==='rest'){
+    await openModal({...base,title:'😴 休息一回合',main:`<div class="q">在這裡好好休息，禁閉一下！<br>下一次輪到你們時要暫停一回合。</div>`,buttons:[{label:'我知道了',cls:'neu',v:1}]});
+    t.skip=true;
+  }else if(kind==='share'){
+    const q=decks.share.draw();
+    const r=await openModal({...base,title:'💬 分享Time',main:`<div class="q">${esc(q)}</div>`,buttons:[{label:'✔ 完成（+10）',cls:'ok',v:1},{label:'✘ 這次先跳過',cls:'no',v:0}]});
+    addScore(i,r?10:0);
+  }else if(kind==='fun'){
+    const f=decks.fun.draw();
+    let extraHtml='';if(f.pairs)extraHtml=`<div id="pairslot"><button class="tbtn ghost" id="pairbtn" style="width:auto;padding:8px 28px;margin-top:10px">🎯 顯示題目</button></div>`;
+    const r=await openModal({...base,title:'🎉 '+f.name,main:`<div class="q">${esc(f.text)}</div>${extraHtml}`,onMount:()=>{const pb=$('#pairbtn');
+    if(pb)pb.onclick=()=>{$('#pairslot').innerHTML=`<div class="ans" style="background:#e9fbf8">🎯 今日題目：${esc(decks.pairs.draw())}</div>`}},buttons:[{label:`✔ ${f.ok}（+${f.okp}）`,cls:'ok',v:1},{label:`✘ ${f.no}`,cls:'no',v:0}]});
+    addScore(i,r?f.okp:0);
+  }else if(kind==='challenge'){
+    const c=decks.challenge.draw();
+    const r=await openModal({...base,title:'🔥 '+c.name,timer:90,main:`<div class="q">${esc(c.text)}</div>`,buttons:[{label:'✔ 完成（+20）',cls:'ok',v:1},{label:'✘ 失敗',cls:'no',v:0}]});
+    addScore(i,r?20:0);
+  }else if(kind==='bible'){
+    const b=decks.bible.draw();
+    if(b.o){
+      const ci='ABC'.indexOf(b.a.match(/\(([ABC])\)/)[1]);let answered=false;
+      await openModal({...base,title:'📖 '+b.t,timer:90,
+        main:`<div class="q">${esc(b.q)}</div><div id="opts">${b.o.map((x,k)=>`<button class="opt" data-k="${k}">(${'ABC'[k]}) ${esc(x)}</button>`).join('')}</div><div id="ansslot"><div class="hintline">👆 點選你們的答案（答對 +15 分）</div></div>`,
+        onMount:ctl=>{
+          const els=[...document.querySelectorAll('#opts .opt')];
+          els.forEach(el=>el.onclick=()=>{
+            if(answered)return;answered=true;ctl.stopTimer();
+            const k=+el.dataset.k,good=k===ci;
+            els.forEach((x,j)=>{x.disabled=true;if(j===ci)x.classList.add('ok');else if(j===k)x.classList.add('bad');else x.classList.add('dim')});
+            const ref=`<div class="refline">📍 經文出處：${esc(b.r)}${b.n?`<small>${esc(b.n)}</small>`:''}</div>`;
+            $('#ansslot').innerHTML=good?`<div class="fb ok">🎉 答對了！+15 分</div>${ref}`:`<div class="fb bad">😢 答錯了，正確答案是 ${'ABC'[ci]}</div>${ref}`;
+            if(good)addScore(i,15);else sfx.bad();
+          });
+        },
+        buttons:[{label:'🏁 結束挑戰',cls:'neu',v:1}]});
+    }else{
+      const r=await openModal({...base,title:'📖 '+b.t,timer:90,
+        main:`<div class="q">${esc(b.q)}</div><div id="ansslot"><button class="tbtn ghost" id="revealbtn" style="width:auto;padding:8px 28px;margin-top:10px">👀 公布答案</button></div>`,
+        onMount:()=>{$('#revealbtn').onclick=()=>{$('#ansslot').innerHTML=`<div class="ans">✅ 答案：${esc(b.a)}${b.n?`<small>${esc(b.n)}</small>`:''}<small>📍 經文出處：${esc(b.r)}</small></div>`}},
+        buttons:[{label:'✔ 答對（+15）',cls:'ok',v:1},{label:'✘ 打錯（+0）',cls:'no',v:0}]});
+      addScore(i,r?15:0);
+    }
+  }else if(kind==='chance'){
+    const c=decks.chance.draw();
+    if(c.kind==='verse'){
+      const r=await openModal({...base,title:`${c.ico} 機會：${c.name}`,timer:c.time,
+        main:`<div class="q">${esc(c.text)}</div><div class="verse">${esc(c.verse)}<br><small>${c.ref}</small></div><div class="eff">${c.eff}</div>`,
+        buttons:[{label:'✔ 背出經文（+25）',cls:'ok',v:1},{label:'✘ 背不出（+0）',cls:'no',v:0}]});
+      addScore(i,r?c.pts:0);
+    }else{
+      await openModal({...base,title:`${c.ico} 機會：${c.name}`,main:`<div class="q">「${esc(c.text)}」</div><div class="eff">➜ ${c.eff}</div>`,buttons:[{label:'好，接受命運！',cls:'neu',v:1}]});
+      if(c.kind==='score')addScore(i,c.val);
+      if(c.kind==='skip')t.skip=true;
+      if(c.kind==='extra')extra=true;
+      if(c.kind==='back'){cell.classList.remove('glow');say('🐑 小羊迷路，後退 3 格⋯');await moveBy(i,3,-1);say(`${t.icon} 退到第 ${t.pos} 格`);await sleep(500);return extra}
+    }
+  }
+  cell.classList.remove('glow');
+  await sleep(450);
+  return extra;
+}
+function checkWin(){
+  const w=teams.find(t=>t.score>=WIN);
+  if(!w)return false;
+  showWin(w);return true;
+}
+
+/* ================= Modal ================= */
+function openModal(cfg){
+  return new Promise(resolve=>{
+    const m=$('#modal');let locked=false,iv=null,left=cfg.timer||0,running=false;
+    const fmt=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+    const timerHtml=cfg.timer?`<div class="timerbox"><div class="clock" id="clock">${fmt(left)}</div><div class="timesup" id="timesup"></div><button class="tbtn" id="tstart">▶ 開始計時</button><button class="tbtn ghost" id="treset">↺ 重設時間</button></div>`:'';
+    m.innerHTML=`<div class="card" role="dialog" aria-modal="true">
+      <div class="hd" style="background:${cfg.color}"><span class="tag">${cfg.tag}</span><h2>${cfg.title}</h2><span class="who">${cfg.who||''}</span></div>
+      <div class="bd"><div class="main">${cfg.main}</div>${timerHtml}</div>
+      <div class="ft">${cfg.buttons.map((b,i)=>`<button class="${b.cls}" data-i="${i}" disabled>${b.label}</button>`).join('')}</div></div>`;
+    m.style.display='flex';
+    const btns=[...m.querySelectorAll('.ft button')];
+    setTimeout(()=>{if(!locked)btns.forEach(b=>b.disabled=false)},700); // 防止誤觸／連點
+    cfg.onMount&&cfg.onMount({stopTimer:()=>{m._stop&&m._stop();m._stop=null;const sb=$('#tstart');if(sb){sb.disabled=true;sb.textContent='已停止';}const tr=$('#treset');if(tr)tr.disabled=true;}});
+    if(cfg.timer){
+      const clock=$('#clock'),up=$('#timesup'),sb=$('#tstart');
+      const stop=()=>{clearInterval(iv);iv=null;running=false};
+      const draw=()=>{clock.textContent=fmt(left);clock.classList.toggle('warn',left<=10&&left>0)};
+      sb.onclick=()=>{
+        if(running){stop();sb.textContent='▶ 繼續計時';return}
+        if(left<=0)return;running=true;sb.textContent='⏸ 暫停';up.textContent='';sfx.pick();
+        const end=Date.now()+left*1000;
+        iv=setInterval(()=>{
+          const nl=Math.max(0,Math.ceil((end-Date.now())/1000));
+          if(nl!==left){left=nl;draw();if(left<=10&&left>0)sfx.tick()}
+          if(left<=0){stop();up.textContent='⏰ 時間到！';sb.textContent='▶ 開始計時';sfx.end()}
+        },100);
+      };
+      $('#treset').onclick=()=>{stop();left=cfg.timer;up.textContent='';sb.textContent='▶ 開始計時';draw()};
+      m._stop=stop;
+    }
+    btns.forEach(b=>b.onclick=()=>{
+      if(locked||b.disabled)return;locked=true;btns.forEach(x=>x.disabled=true);
+      m._stop&&m._stop();m._stop=null;
+      const v=cfg.buttons[+b.dataset.i].v;
+      setTimeout(()=>{m.style.display='none';m.innerHTML='';resolve(v)},250);
+    });
+  });
+}
+
+/* ================= 勝利 ================= */
+let confetti=[],cf=0;
+function showWin(w){
+  sfx.win();
+  const sorted=teams.slice().sort((a,b)=>b.score-a.score);
+  const wn=$('#win');
+  wn.querySelectorAll('.wcontent').forEach(e=>e.remove());
+  const c=document.createElement('div');c.className='wcontent';c.style.cssText='position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:14px';
+  c.innerHTML=`<div class="trophy">🏆</div><h1>${esc(w.name)} 獲勝！</h1><p>恭喜 ${w.icon} 率先達到 ${WIN} 分！大家一起歡呼吧！🎉</p>
+   <div id="winrank">${sorted.map((t,i)=>`<div class="wr" style="border-bottom:10px solid ${t.color}">${['🥇','🥈','🥉','4'][i]} ${esc(t.name)}<b>${t.score}</b></div>`).join('')}</div>
+   <div class="row"><button class="bigbtn" id="again">再玩一次（同樣隊伍）</button><button class="bigbtn alt" id="toSetup">重新設定隊伍</button></div>`;
+  wn.appendChild(c);wn.style.display='flex';
+  $('#again').onclick=()=>{cancelAnimationFrame(cf);wn.style.display='none';teams.forEach(t=>{t.score=0;t.pos=0;t.skip=false});decks=newDecks();cur=0;buildBoard();buildRank();startTurn()};
+  $('#toSetup').onclick=()=>{cancelAnimationFrame(cf);wn.style.display='none';$('#game').style.display='none';$('#setup').style.display='flex';buildSetup()};
+  const cv=$('#cv'),g=cv.getContext('2d');const cols=['#ffd93d','#ff6b9d','#2ec4b6','#7b5cff','#ff5a5f','#5ec8f2'];
+  confetti=Array.from({length:180},()=>({x:Math.random()*1600,y:-Math.random()*900,vx:(Math.random()-.5)*3,vy:2+Math.random()*4,s:8+Math.random()*12,r:Math.random()*6,vr:(Math.random()-.5)*.3,c:cols[Math.floor(Math.random()*cols.length)]}));
+  const loop=()=>{g.clearRect(0,0,1600,900);confetti.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;if(p.y>920){p.y=-20;p.x=Math.random()*1600}g.save();g.translate(p.x,p.y);g.rotate(p.r);g.fillStyle=p.c;g.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);g.restore()});cf=requestAnimationFrame(loop)};
+  cancelAnimationFrame(cf);loop();
+}
+
+/* ================= 縮放 ================= */
+function fit(){const s=Math.min(innerWidth/1600,innerHeight/900);$('#stage').style.transform=`translate(-50%,-50%) scale(${s})`}
+addEventListener('resize',fit);fit();
+buildSetup();
+})();
+</script>
+
+</html>
